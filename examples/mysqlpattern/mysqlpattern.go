@@ -116,6 +116,8 @@ func (c *MysqlClient) Add1(name string) int {
         Name:  name,
         Count: make(chan int),
     }
+    defer close(param.Count)
+
     c.add1Stream <- param
     return <-param.Count
 }
@@ -125,6 +127,8 @@ func (c *MysqlClient) QueryByName(name string) Counter {
         Name:   name,
         Result: make(chan CounterResult),
     }
+    defer close(param.Result)
+
     c.queryByNameParam <- param
     return (<-param.Result).Counter
 }
@@ -134,6 +138,8 @@ func (c *MysqlClient) AddCounter(name string) Counter {
         Name:   name,
         Result: make(chan CounterResult),
     }
+    defer close(param.Result)
+
     c.addCounterParam <- param
     return (<-param.Result).Counter
 }
@@ -143,6 +149,8 @@ func (c *MysqlClient) DeleteByName(name string) error {
         Name:   name,
         Result: make(chan CounterResult),
     }
+    defer close(param.Result)
+
     c.deleteByNameParam <- param
     return (<-param.Result).Err
 }
