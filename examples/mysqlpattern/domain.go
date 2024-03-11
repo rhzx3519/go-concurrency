@@ -16,9 +16,35 @@ type Add1Param struct {
     Count chan int
 }
 
-func addCounter(c Counter, db *sql.DB) (int64, error) {
-    result, err := db.Exec("INSERT INTO counters (name, count) VALUES (?, ?)",
-        c.Name, c.Count)
+type AddCounterParam struct {
+    Name   string
+    Result chan CounterResult
+}
+
+type CounterResult struct {
+    Counter Counter
+    Err     error
+}
+
+type QueryByNameParam struct {
+    Name   string
+    Result chan CounterResult
+}
+
+type UpdateCounterParam struct {
+    ID     int64
+    Count  int
+    Result chan CounterResult
+}
+
+type DeleteByNameParam struct {
+    Name   string
+    Result chan CounterResult
+}
+
+func addCounter(param AddCounterParam, db *sql.DB) (int64, error) {
+    result, err := db.Exec("INSERT INTO counters (name) VALUES (?)",
+        param.Name)
     if err != nil {
         return 0, fmt.Errorf("addCounter: %v", err)
     }
@@ -41,7 +67,7 @@ func queryByName(name string, db *sql.DB) (Counter, error) {
     return counter, nil
 }
 
-func updateCounter(id int64, count, db *sql.DB) error {
+func updateCounter(id int64, count int, db *sql.DB) error {
     result, err := db.Exec("UPDATE SET counters count = ? WHERE id = ?",
         count, id)
     if err != nil {
@@ -53,6 +79,21 @@ func updateCounter(id int64, count, db *sql.DB) error {
     }
     if rowsAffected == 0 {
         return fmt.Errorf("updateCounter %v: no such counter", id)
+    }
+    return nil
+}
+
+func deleteByName(name string, db *sql.DB) error {
+    result, err := db.Exec("DELETE FROM counters WHERE name = ?", name)
+    if err != nil {
+        return fmt.Errorf("deleteByName: %v", err)
+    }
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("deleteByName: %v", err)
+    }
+    if rowsAffected == 0 {
+        return fmt.Errorf("deleteByName %v: no such counter", name)
     }
     return nil
 }
